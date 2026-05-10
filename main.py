@@ -1,8 +1,20 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import random
 
 app = FastAPI(title="System Health Monitor")
 
+# --- Add this CORS Middleware block ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins (good for local dev)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],
+)
+# --------------------------------------
+
+# Your @app.get("/") and other endpoints remain here below...
 # 1. Root endpoint - helpful for checking if the server is alive
 @app.get("/")
 def read_root():

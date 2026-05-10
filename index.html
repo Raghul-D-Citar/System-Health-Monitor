@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Monitor</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #1e1e2e; /* Deep dark background */
+            color: #cdd6f4;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 { color: #89b4fa; }
+        .dashboard-grid {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 40px;
+        }
+        .card {
+            background-color: #313244;
+            padding: 30px;
+            border-radius: 12px;
+            width: 200px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .card h3 { margin-top: 0; color: #bac2de; }
+        .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #a6e3a1; /* Success green */
+            margin: 10px 0;
+        }
+        .status-dot {
+            height: 10px; width: 10px;
+            background-color: #a6e3a1;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1><span class="status-dot"></span>Live Server Diagnostics</h1>
+    
+    <div class="dashboard-grid">
+        <div class="card">
+            <h3>CPU Usage</h3>
+            <div class="value" id="cpu-val">--%</div>
+        </div>
+        <div class="card">
+            <h3>RAM Usage</h3>
+            <div class="value" id="ram-val">-- GB</div>
+        </div>
+        <div class="card">
+            <h3>Disk Usage</h3>
+            <div class="value" id="disk-val">--%</div>
+        </div>
+    </div>
+
+    <script>
+        // This function "talks" to your Python backend
+        async function fetchMetrics() {
+            try {
+                // Fetch CPU
+                const cpuRes = await fetch('http://127.0.0.1:8000/api/cpu');
+                const cpuData = await cpuRes.json();
+                document.getElementById('cpu-val').innerText = cpuData.value + '%';
+
+                // Fetch RAM
+                const ramRes = await fetch('http://127.0.0.1:8000/api/ram');
+                const ramData = await ramRes.json();
+                document.getElementById('ram-val').innerText = ramData.value + ' GB';
+
+                // Fetch Disk
+                const diskRes = await fetch('http://127.0.0.1:8000/api/disk');
+                const diskData = await diskRes.json();
+                document.getElementById('disk-val').innerText = diskData.value + '%';
+                
+            } catch (error) {
+                console.error('Failed to connect to API:', error);
+                document.getElementById('cpu-val').innerText = 'ERR';
+            }
+        }
+
+        // Run immediately on load
+        fetchMetrics();
+        
+        // The Magic: Run the function automatically every 2 seconds
+        setInterval(fetchMetrics, 2000);
+    </script>
+</body>
+</html>

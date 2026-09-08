@@ -1,0 +1,20 @@
+[Unit]
+Description=System Health Monitor Monitoring Server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=monitor
+Group=monitor
+WorkingDirectory=/opt/system-health-monitor
+Environment=PYTHONUNBUFFERED=1
+Environment=SHM_HOST=127.0.0.1
+Environment=SHM_PORT=8000
+ExecStart=/opt/system-health-monitor/.venv/bin/python run.py
+Restart=always
+RestartSec=5
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

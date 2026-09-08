@@ -1258,6 +1258,66 @@ Remaining planned phase:
 - **Phase 6 — CI/CD**: GitHub + Jenkins pipeline for automated testing,
   building, and deployment.
 
+### Phase 6 Step 2: Deployment
+
+The Jenkins pipeline now includes a deployment stage after validation.
+Deployment is intentionally simple and SSH-based:
+
+- Jenkins syncs the validated repository to a target Linux VM with `rsync`.
+- Jenkins uses an SSH credential configured in Jenkins, not hardcoded secrets.
+- The deployment stage excludes local virtual environments, `node_modules`,
+  pytest caches, Python bytecode, and generated TLS certificates.
+- Jenkins installs the committed systemd unit, reloads systemd if the unit
+  changed, restarts only the Monitoring Server service, and then checks
+  `GET /api/health` before marking the deployment successful.
+
+Systemd service:
+
+- Name: `system-health-monitor.service`
+- User: `deploy`
+- Working directory: `/opt/system-health-monitor`
+- Restart policy: `Restart=always` with `RestartSec=5`
+- Startup ordering: waits for `network-online.target`
+
+Required Jenkins configuration:
+
+- An SSH credential with ID `shm-deploy-ssh` or the value passed as the
+  `SSH_CREDENTIALS_ID` parameter.
+- The credential should be an SSH private key for the deployment user on the
+  target Linux host.
+
+Target deployment directory:
+
+- Default: `/opt/system-health-monitor`
+- Override with the `DEPLOY_DIR` Jenkins parameter if needed.
+
+Target machine prerequisites:
+
+- Linux host with SSH access enabled.
+- Python 3 installed.
+- `rsync` installed.
+- `sudo` access without interactive password prompts for the deployment user.
+- The deployment user is `deploy` or the service unit is adjusted accordingly.
+- The project directory exists or can be created at the deployment path.
+- The deployment user can create or reuse the virtual environment at
+  `/opt/system-health-monitor/.venv`.
+- The Monitoring Server can be started with `python3 run.py` from the deployed
+  directory.
+
+How to verify the deployment:
+
+```bash
+sudo systemctl status system-health-monitor.service
+curl http://127.0.0.1:8000/api/health
+```
+
+If the service is exposed through Nginx on the target VM, verify the public
+endpoint as well:
+
+```bash
+curl -k https://127.0.0.1/api/health
+```
+
 Deliberately excluded (may be considered much later): Docker, Kubernetes,
 databases, Redis, Prometheus, Grafana, cloud services.
 

@@ -9,6 +9,12 @@ pipeline {
         string(name: 'SSH_CREDENTIALS_ID', defaultValue: 'shm-deploy-ssh', description: 'Jenkins SSH credential ID for deployment.')
     }
 
+    properties {
+        pipelineTriggers([
+            githubPush()
+        ])
+    }
+
     options {
         skipDefaultCheckout(true)
         timestamps()
@@ -98,6 +104,7 @@ pipeline {
                     expression { return params.DEPLOY_HOST?.trim() }
                     expression { return params.DEPLOY_USER?.trim() }
                     expression { return params.DEPLOY_DIR?.trim() }
+                    expression { return env.BRANCH_NAME == 'main' || env.GIT_BRANCH == 'origin/main' }
                 }
             }
             steps {

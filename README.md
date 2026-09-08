@@ -1318,6 +1318,95 @@ endpoint as well:
 curl -k https://127.0.0.1/api/health
 ```
 
+### Phase 6 Step 3: GitHub Webhook Trigger
+
+The Jenkins pipeline now supports automatic triggering from GitHub push events.
+
+- **Automatic trigger**: When code is pushed to the `main` branch, GitHub sends a
+  webhook to Jenkins, which automatically starts the pipeline validation and, if
+  successful, deploys to the target Linux host.
+- **Trigger configuration**: Added GitHub push trigger to the Jenkinsfile via
+  `pipelineTriggers { githubPush() }`.
+- **Branch restriction**: Deployment runs only when the source branch is `main`.
+  Other branches trigger validation (tests/build) but do not deploy.
+
+#### Manual Jenkins Configuration Required
+
+1. **Install the GitHub plugin**:
+   - Go to Manage Jenkins → Manage Plugins.
+   - Search for "GitHub plugin".
+   - Install the latest version and restart Jenkins if needed.
+
+2. **Configure GitHub credentials in Jenkins**:
+   - Go to Manage Jenkins → Credentials.
+   - Add a new credential of kind "GitHub App" or "Username with password".
+   - If using a GitHub App: Generate a private key from GitHub App settings.
+   - If using personal access token: Use a token with `admin:repo_hook` scope.
+
+3. **Create or update the Jenkins job**:
+   - Job name: `system-health-monitor` (or another name of your choice).
+   - Job type: Multibranch Pipeline.
+   - Branch sources: GitHub organization or single repository.
+   - Credentials: Select the GitHub credential created in step 2.
+   - Build configuration: "by Jenkinsfile" (pipeline script from repo root).
+
+4. **Enable webhook auto-registration**:
+   - In Jenkins, go to Manage Jenkins → Configure System.
+   - Find "GitHub" section.
+   - Verify "GitHub Server" is configured with correct GitHub API endpoint.
+   - The GitHub webhook will be auto-registered if the job has correct permissions.
+
+#### Manual GitHub Configuration Required
+
+1. **Grant Jenkins webhook permissions**:
+   - Go to Settings → Developer settings → GitHub Apps (or OAuth Apps).
+   - If using Jenkins GitHub App: Authorize the app for the repository.
+   - If using personal access token: Token must have `admin:repo_hook` scope.
+
+2. **Verify webhook delivery (optional but recommended)**:
+   - Go to repository Settings → Webhooks.
+   - If the webhook was created automatically by Jenkins, it will be listed.
+   - Click on the webhook to see delivery history and debug payloads.
+
+#### How to Test the GitHub Webhook Safely
+
+1. **Make a test commit to a feature branch (not `main`)**:
+   ```bash
+   git checkout -b test-webhook
+   echo "# Test webhook" >> README.md
+   git add README.md
+   git commit -m "Test webhook trigger"
+   git push -u origin test-webhook
+   ```
+   This triggers validation (tests/build) but NOT deployment.
+
+2. **Verify in Jenkins**:
+   - Check Jenkins to confirm the pipeline started.
+   - The build should complete with tests passing and build succeeding.
+
+3. **Confirm deployment was skipped**:
+   - Look at Jenkins build logs.
+   - The Deploy stage should show "Stage skipped due to when condition".
+
+4. **Once validated, push to `main`**:
+   ```bash
+   git checkout main
+   git merge test-webhook
+   git push origin main
+   ```
+   This triggers the full pipeline including deployment.
+
+5. **Verify full deployment**:
+   - Check Jenkins build logs for the Deploy stage.
+   - Verify the systemd service is running on the target:
+     ```bash
+     sudo systemctl status system-health-monitor.service
+     ```
+   - Verify the API responds:
+     ```bash
+     curl http://127.0.0.1:8000/api/health
+     ```
+
 Deliberately excluded (may be considered much later): Docker, Kubernetes,
 databases, Redis, Prometheus, Grafana, cloud services.
 

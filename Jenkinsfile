@@ -3,7 +3,7 @@ pipeline {
 
     parameters {
         string(name: 'DEPLOY_HOST', defaultValue: '', description: 'Target Linux host for deployment (for example, 192.168.1.100).')
-        string(name: 'DEPLOY_USER', defaultValue: 'deploy', description: 'SSH user on the target host.')
+        string(name: 'DEPLOY_USER', defaultValue: 'monitor', description: 'SSH user on the target host.')
         string(name: 'DEPLOY_PORT', defaultValue: '22', description: 'SSH port on the target host.')
         string(name: 'DEPLOY_DIR', defaultValue: '/opt/system-health-monitor', description: 'Target deployment directory on the Linux host.')
         string(name: 'SSH_CREDENTIALS_ID', defaultValue: 'shm-deploy-ssh', description: 'Jenkins SSH credential ID for deployment.')
